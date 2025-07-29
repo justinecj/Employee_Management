@@ -1,0 +1,272 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Employee Management</title>
+  <link rel="stylesheet" href="{% static 'css/index.css' %}">
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+</head>
+
+<body>
+
+<div class="logout-container">
+  <button onclick="logout()">Logout</button>
+  <button onclick="window.location.href='/change-password'">Change Password</button>
+  <button onclick="window.location.href='/profile'">Profile</button>
+</div>
+
+<h1>Dynamic Employee Management</h1>
+
+<!-- 1. Form Builder -->
+<div class="section">
+  <h2>1. Form Builder</h2>
+  <div id="form-builder"></div>
+  <button onclick="addField()">Add Field</button>
+  <button onclick="saveForm()">Save Form</button>
+</div>
+
+<!-- 2. Create or Update Employee -->
+<div class="section">
+  <h2>2. Create / Update Employee</h2>
+  <select id="form-selector" onchange="loadFormFields()">
+    <option disabled selected>Select a Form</option>
+  </select>
+  <div id="dynamic-form"></div>
+  <button onclick="submitEmployee()">Submit</button>
+  <button onclick="resetForm()">Clear</button>
+</div>
+
+<!-- 3. Employee List -->
+<div class="section">
+  <h2>3. Employee Listing</h2>
+  <input type="text" id="search" placeholder="Search..." onkeyup="loadEmployees()" />
+  <table>
+    <thead><tr><th>ID</th><th>Data</th><th>Actions</th></tr></thead>
+    <tbody id="employee-list"></tbody>
+  </table>
+</div>
+
+<script>
+  let token = localStorage.getItem('access');
+  const refreshToken = localStorage.getItem('refresh');
+  if (!token || !refreshToken) {
+    alert("Unauthorized. Please login.");
+    window.location.href = "/login";
+  }else {
+  // Prevent browser back navigation
+  window.history.pushState(null, null, window.location.href);
+  window.onpopstate = function () {
+    window.history.pushState(null, null, window.location.href);
+  };
+}
+
+  axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  let fields = [];
+  let currentSchema = [];
+  let editingEmployeeId = null;
+
+  // Axios interceptor for refresh token
+  axios.interceptors.response.use(
+    response => response,
+    async error => {
+      const originalRequest = error.config;
+      if (error.response?.status === 401 && !originalRequest._retry) {
+        originalRequest._retry = true;
+        try {
+          const res = await axios.post('/auth/token/refresh/', { refresh: refreshToken });
+          const newAccess = res.data.access;
+          localStorage.setItem('access', newAccess);
+          axios.defaults.headers.common['Authorization'] = `Bearer ${newAccess}`;
+          originalRequest.headers['Authorization'] = `Bearer ${newAccess}`;
+          return axios(originalRequest);
+        } catch (err) {
+          alert("Session expired. Please log in again.");
+          logout();
+        }
+      }
+      return Promise.reject(error);
+    }
+  );
+
+  function logout() {
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.href = "/login";
+  }
+
+  function addField() {
+    fields.push({ label: "", type: "text" });
+    renderBuilder();
+  }
+
+  function renderBuilder() {
+    const container = document.getElementById('form-builder');
+    container.innerHTML = '';
+    fields.forEach((f, i) => {
+      container.innerHTML += `
+        <div class="field" data-id="${i}">
+          <input placeholder="Label" value="${f.label}" onchange="fields[${i}].label=this.value" />
+          <select onchange="fields[${i}].type=this.value">
+            <option value="text" ${f.type==='text'?'selected':''}>Text</option>
+            <option value="number" ${f.type==='number'?'selected':''}>Number</option>
+            <option value="date" ${f.type==='date'?'selected':''}>Date</option>
+            <option value="password" ${f.type==='password'?'selected':''}>Password</option>
+          </select>
+        </div>`;
+    });
+  }
+
+  function saveForm() {
+    const name = prompt("Enter form name:");
+    if (!name || fields.length === 0) return alert("Invalid form!");
+
+    axios.post('/employees/forms/', { name, schema: fields })
+      .then(() => {
+        alert("Form saved!");
+        fields = [];
+        renderBuilder();
+        loadFormOptions();
+      })
+      .catch(err => {
+        alert("Error saving form: " + JSON.stringify(err.response.data));
+      });
+  }
+
+  function loadFormOptions() {
+    axios.get('/employees/forms/')
+      .then(res => {
+        const select = document.getElementById('form-selector');
+        select.innerHTML = `<option disabled selected>Select a Form</option>`;
+        res.data.forEach(f => {
+          select.innerHTML += `<option value="${f.id}">${f.name}</option>`;
+        });
+      });
+  }
+
+  function loadFormFields() {
+    const formId = document.getElementById('form-selector').value;
+    axios.get(`/employees/forms/${formId}/`)
+      .then(res => {
+        currentSchema = res.data.schema;
+        const container = document.getElementById('dynamic-form');
+        container.innerHTML = '';
+        currentSchema.forEach((field, i) => {
+          container.innerHTML += `
+            <div>
+              <label>${field.label}</label><br>
+              <input type="${field.type}" id="field-${i}" /><br><br>
+            </div>`;
+        });
+      });
+  }
+
+  function submitEmployee() {
+    const formId = document.getElementById('form-selector').value;
+    const data = {};
+    currentSchema.forEach((field, i) => {
+      data[field.label] = document.getElementById(`field-${i}`).value;
+    });
+
+    if (!formId) return alert("Select a form.");
+
+    if (editingEmployeeId) {
+      axios.put(`/employees/employees/${editingEmployeeId}/`, { form: formId, data })
+        .then(() => {
+          alert("Employee updated!");
+          resetForm();
+          loadEmployees();
+        })
+        .catch(() => alert("Update failed."));
+    } else {
+      axios.post('/employees/employees/', { form: formId, data })
+        .then(() => {
+          alert("Employee created!");
+          resetForm();
+          loadEmployees();
+        })
+        .catch(() => alert("Creation failed."));
+    }
+  }
+
+  function editEmployee(id) {
+    axios.get(`/employees/employees/${id}/`)
+      .then(res => {
+        const emp = res.data;
+        editingEmployeeId = emp.id;
+        document.getElementById('form-selector').value = emp.form;
+
+        axios.get(`/employees/forms/${emp.form}/`)
+          .then(res2 => {
+            currentSchema = res2.data.schema;
+            const container = document.getElementById('dynamic-form');
+            container.innerHTML = '';
+            currentSchema.forEach((field, i) => {
+              container.innerHTML += `
+                <div>
+                  <label>${field.label}</label><br>
+                  <input type="${field.type}" id="field-${i}" value="${emp.data[field.label] || ''}" /><br><br>
+                </div>`;
+            });
+          });
+      });
+  }
+
+  function deleteEmployee(id) {
+    if (!confirm("Are you sure?")) return;
+    axios.delete(`/employees/employees/${id}/`)
+      .then(() => {
+        alert("Deleted!");
+        loadEmployees();
+      });
+  }
+
+  function loadEmployees() {
+    const q = document.getElementById('search').value;
+    axios.get(`/employees/employees/?search=${q}`)
+      .then(res => {
+        const tbody = document.getElementById('employee-list');
+        tbody.innerHTML = '';
+        res.data.forEach(emp => {
+          const formattedData = Object.entries(emp.data).map(([key, value]) =>
+            `<div><strong>${key}:</strong> ${value}</div>`).join('');
+          tbody.innerHTML += `
+            <tr>
+              <td>${emp.id}</td>
+              <td>${formattedData}</td>
+              <td>
+                <button onclick="editEmployee(${emp.id})">✏️ Edit</button>
+                <button onclick="deleteEmployee(${emp.id})">🗑 Delete</button>
+              </td>
+            </tr>`;
+        });
+      });
+  }
+
+  function resetForm() {
+    editingEmployeeId = null;
+    document.getElementById('form-selector').selectedIndex = 0;
+    document.getElementById('dynamic-form').innerHTML = '';
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    Sortable.create(document.getElementById('form-builder'), {
+      animation: 150,
+      onEnd: evt => {
+        const item = fields.splice(evt.oldIndex, 1)[0];
+        fields.splice(evt.newIndex, 0, item);
+        renderBuilder();
+      }
+    });
+
+    loadFormOptions();
+    loadEmployees();
+  });
+</script>
+
+</body>
+</html>

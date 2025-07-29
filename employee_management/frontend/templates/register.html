@@ -1,0 +1,40 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Register - Employee Management</title>
+  <link rel="stylesheet" type="text/css" href="{% static 'css/register.css' %}">
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+
+  <div class="register-container">
+    <h2>HR Registration</h2>
+    <input type="text" id="username" placeholder="Username" />
+    <input type="email" id="email" placeholder="Email" />
+    <input type="password" id="password" placeholder="Password" />
+    <button onclick="register()">Register</button>
+
+    <div class="link">
+      <p>Already have an account? <a href="/login">Login</a></p>
+    </div>
+  </div>
+
+  <script>
+    function register() {
+      axios.post('/auth/register/', {
+        username: document.getElementById('username').value,
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value
+      }).then(() => {
+        alert("Registered! Please login.");
+        window.location.href = "/login";
+      }).catch(() => {
+        alert("Registration failed");
+      });
+    }
+  </script>
+
+</body>
+</html>
