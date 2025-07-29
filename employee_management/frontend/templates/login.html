@@ -25,9 +25,45 @@
 
 <script>
 
-  // If already logged in (access or refresh token exists), redirect to dashboard
-  const accessToken = document.cookie.split('; ').find(row => row.startsWith('access='));
+  const getCookie = (name) => {
+    const cookie = document.cookie
+      .split('; ')
+      .find(row => row.startsWith(name + '='));
+    return cookie ? cookie.split('=')[1] : null;
+  };
+
+  const accessToken = getCookie('access');
   const refreshToken = localStorage.getItem('refresh');
+
+  // If access token exists, verify it using the backend
+  if (accessToken) {
+    axios.post('/auth/token/verify/', { token: accessToken })
+      .then(() => {
+        // Access token is valid
+        window.location.href = "/dashboard/";
+      })
+      .catch(() => {
+        // Access token expired or invalid
+        if (refreshToken) {
+          // Try to get new access token using refresh
+          axios.post('/auth/token/refresh/', { refresh: refreshToken })
+            .then(res => {
+              const newAccess = res.data.access;
+              document.cookie = `access=${newAccess}; path=/;`;
+              window.location.href = "/dashboard/";
+            })
+            .catch(() => {
+              // Refresh token also expired or invalid
+              localStorage.removeItem('refresh');
+              document.cookie = 'access=; Max-Age=0; path=/;';
+            });
+        }
+      });
+  }
+
+  // If already logged in (access or refresh token exists), redirect to dashboard
+  // const accessToken = document.cookie.split('; ').find(row => row.startsWith('access='));
+  // const refreshToken = localStorage.getItem('refresh');
 
   // if (accessToken || refreshToken) {
   //   window.location.href = "/dashboard/";

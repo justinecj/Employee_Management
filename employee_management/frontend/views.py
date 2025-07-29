@@ -19,7 +19,7 @@ def jwt_login_required(func):
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
             print(f"Decoded JWT payload: {payload}")
-            request.user_id = payload['user_id']  # Assuming user_id is in the JWT
+            request.user_id = payload['user_id']  
             print(f"User ID from JWT: {request.user_id}")
             # You can also fetch user here if needed
             # request.user = User.objects.get(id=payload['user_id'])
@@ -57,16 +57,3 @@ def logout_view(request):
     response.delete_cookie('access')
     return response
 
-
-
-# eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzUzODEyMzAxLCJpYXQiOjE3NTM4MTIwMDEsImp0aSI6ImJjYzk2YjEwNzBhYTRhM2NiYjlkNzljNWYzOWE2ZDIxIiwidXNlcl9pZCI6IjIifQ.kgDGtMl8hkyImq6ZslTmpnFAHaVbkPKj380VtpNGl_I
-# eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzUzODEyMzAxLCJpYXQiOjE3NTM4MTIwMDEsImp0aSI6IjdjMWJmNGNmYjgxNTQ3MTdiNTFmMGIzMzcxNzQyZTZhIiwidXNlcl9pZCI6IjIifQ.ncwaYws8hA9w80V-GuTYv07scSEBk5SR1Ux01XPD_wI
-# eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc1Mzg5ODQwMSwiaWF0IjoxNzUzODEyMDAxLCJqdGkiOiI0OGFlMDE3OGMyNTc0NjZmOWRiMmY5NzAyMmQyN2Y5MSIsInVzZXJfaWQiOiIyIn0.wIDFU9-YvFQJXAVc7I3Xc824fIz6_O3NJEgV2WeUX0s
-
-
-
-# eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzUzODEyODkyLCJpYXQiOjE3NTM4MTI1OTIsImp0aSI6ImIwZWNhNjQ4ZWYwMDQ3Y2E4ZjQwMjdlYzM1ZDcxNGYwIiwidXNlcl9pZCI6IjIifQ.2HRKg3wuBXMTUCb-nrF3sBY0jXj4bEkpE_5IQeMnbxc
-# eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzUzODEyODkzLCJpYXQiOjE3NTM4MTI1OTMsImp0aSI6Ijc3ZTcyNTI0YzMxNTQyNzZhODhhOGRkNmFiMjVlNzRhIiwidXNlcl9pZCI6IjIifQ.au34C9mEvOgRgeQ8vZNyDJgNnStmhPDYeCZAhTzujbs
-# eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc1Mzg5ODk5MiwiaWF0IjoxNzUzODEyNTkyLCJqdGkiOiI4MWYxMjBlZDM4OTg0OGNhODY1NWYzZGVjNTkxMjc3ZCIsInVzZXJfaWQiOiIyIn0.hRyDVudFErnf8UVSx-uPdwjUYlllU48WNMSzvMvCYYk
-
-# eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzUzODEyODkyLCJpYXQiOjE3NTM4MTI1OTIsImp0aSI6ImIwZWNhNjQ4ZWYwMDQ3Y2E4ZjQwMjdlYzM1ZDcxNGYwIiwidXNlcl9pZCI6IjIifQ.2HRKg3wuBXMTUCb-nrF3sBY0jXj4bEkpE_5IQeMnbxc
