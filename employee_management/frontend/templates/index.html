@@ -53,17 +53,7 @@
 
 <script>
   let token = localStorage.getItem('access');
-  const refreshToken = localStorage.getItem('refresh');
-  if (!token || !refreshToken) {
-    alert("Unauthorized. Please login.");
-    window.location.href = "/login";
-  }else {
-  // Prevent browser back navigation
-  window.history.pushState(null, null, window.location.href);
-  window.onpopstate = function () {
-    window.history.pushState(null, null, window.location.href);
-  };
-}
+  const refreshToken = localStorage.getItem('refresh');  
 
   axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   let fields = [];
@@ -93,11 +83,17 @@
     }
   );
 
-  function logout() {
-    localStorage.clear();
-    sessionStorage.clear();
-    window.location.href = "/login";
-  }
+function logout() {
+  // Clear refresh token from localStorage
+  localStorage.removeItem('access');
+  localStorage.removeItem('refresh');
+
+  // Expire the access cookie
+  document.cookie = "access=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+
+  // Redirect to login
+  window.location.href = "/logout";
+}
 
   function addField() {
     fields.push({ label: "", type: "text" });
@@ -239,8 +235,8 @@
               <td>${emp.id}</td>
               <td>${formattedData}</td>
               <td>
-                <button onclick="editEmployee(${emp.id})">✏️ Edit</button>
-                <button onclick="deleteEmployee(${emp.id})">🗑 Delete</button>
+                <button class="edit-btn"  onclick="editEmployee(${emp.id})">Edit</button>
+                <button class="delete-btn" onclick="deleteEmployee(${emp.id})">Delete</button>
               </td>
             </tr>`;
         });

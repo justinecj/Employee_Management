@@ -13,12 +13,12 @@
 <body>
 
   <div class="top-bar">
-    <button onclick="logout()">Logout</button>
-    <button onclick="window.location.href='/dashboard'">Dashboard</button>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+    <button class="dashboard-btn" onclick="window.location.href='/dashboard'">Dashboard</button>
   </div>
 
   <div class="profile-container">
-    <h2>👤 HR Profile</h2>
+    <h2>HR Profile</h2>
     <div id="profile-info">
       <p><strong>ID:</strong> <span id="user-id"></span></p>
       <p><strong>Username:</strong> <span id="username"></span></p>
@@ -28,22 +28,35 @@
 
   <script>
     const token = localStorage.getItem('access');
-    if (!token) {
-      alert("Unauthorized. Please login.");
-      window.location.href = "/login";
-    } else {
-    // Prevent browser back navigation
-    window.history.pushState(null, null, window.location.href);
-    window.onpopstate = function () {
-        window.history.pushState(null, null, window.location.href);
-    };
-    }
+    const refreshToken = localStorage.getItem('refresh');
 
-    // Prevent Back Button after logout
-    window.history.pushState(null, "", window.location.href);
-    window.onpopstate = function () {
-        window.history.pushState(null, "", window.location.href);
-    };
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+    // Refresh token logic
+    axios.interceptors.response.use(
+      response => response,
+      async error => {
+        const originalRequest = error.config;
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          originalRequest._retry = true;
+          try {
+            const res = await axios.post('/auth/token/refresh/', { refresh: refreshToken });
+            const newAccess = res.data.access;
+            localStorage.setItem('access', newAccess);
+            axios.defaults.headers.common['Authorization'] = `Bearer ${newAccess}`;
+            originalRequest.headers['Authorization'] = `Bearer ${newAccess}`;
+            return axios(originalRequest);
+          } catch (err) {
+            alert("Session expired. Please log in again.");
+            logout();
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+
+
+    
 
     axios.get('/auth/profile/', {
       headers: { Authorization: `Bearer ${token}` }
@@ -58,11 +71,17 @@
       console.error(err);
     });
 
-    function logout() {
-      localStorage.clear();
-      sessionStorage.clear();
-      window.location.href = "/login";
-    }
+  function logout() {
+    // Clear refresh token from localStorage
+    localStorage.removeItem('access');
+    localStorage.removeItem('refresh');
+
+    // Expire the access cookie
+    document.cookie = "access=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+
+    // Redirect to login
+    window.location.href = "/logout";
+  }
   </script>
 
 </body>

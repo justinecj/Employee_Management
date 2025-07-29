@@ -13,7 +13,6 @@ db.sqlite3
 *.log
 media/
 staticfiles/
-static/
 
 # Environment variables & secrets
 .env

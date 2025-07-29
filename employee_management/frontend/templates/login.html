@@ -12,30 +12,49 @@
 
   <div class="login-container">
     <h2>HR Login</h2>
-    <input type="text" id="username" placeholder="Username" />
-    <input type="password" id="password" placeholder="Password" />
-    <button onclick="login()">Login</button>
+    <form onsubmit="handleLogin(event)">
+      <input type="text" id="username" placeholder="Username" required />
+      <input type="password" id="password" placeholder="Password" required />
+      <button type="submit">Login</button>
+    </form>
 
     <div class="link">
       <p>Don't have an account? <a href="/register">Register</a></p>
     </div>
   </div>
 
-  <script>
-    function login() {
-      axios.post('/auth/login/', {
-        username: document.getElementById('username').value,
-        password: document.getElementById('password').value
-      }).then(res => {
-        localStorage.setItem('access', res.data.access);
-        localStorage.setItem('refresh', res.data.refresh);
-        window.location.href = "/dashboard";
-      }).catch(err => {
+<script>
+
+  // If already logged in (access or refresh token exists), redirect to dashboard
+  const accessToken = document.cookie.split('; ').find(row => row.startsWith('access='));
+  const refreshToken = localStorage.getItem('refresh');
+
+  // if (accessToken || refreshToken) {
+  //   window.location.href = "/dashboard/";
+  // }
+
+  function handleLogin(event) {
+    event.preventDefault(); // Prevent form default submission behavior
+
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+
+    axios.post('/auth/login/', { username, password })
+      .then(res => {
+        const accessToken = res.data.access;
+        const refreshToken = res.data.refresh;
+
+        document.cookie = `access=${accessToken}; path=/;`;
+        localStorage.setItem('refresh', refreshToken);
+
+        window.location.href = "/dashboard/";
+      })
+      .catch(err => {
         alert("Login failed. Please check your credentials.");
         console.error(err);
       });
-    }
-  </script>
+  }
+</script>
 
 </body>
 </html>

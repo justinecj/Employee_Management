@@ -6,10 +6,11 @@ from django.contrib.auth.models import User
 from .serializers import RegisterSerializer, ChangePasswordSerializer, ProfileSerializer
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import authenticate
+from rest_framework_simplejwt.views import TokenObtainPairView
+from .serializers import CustomTokenObtainPairSerializer
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
 def register_user(request):
     serializer = RegisterSerializer(data=request.data)
     if serializer.is_valid():
@@ -17,10 +18,13 @@ def register_user(request):
         return Response({"message": "User registered successfully!"}, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def change_password(request):
+    print(request.user)
     serializer = ChangePasswordSerializer(data=request.data)
     if serializer.is_valid():
         user = request.user

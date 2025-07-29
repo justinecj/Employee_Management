@@ -17,14 +17,15 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
-from frontend.views import login_view, register_view, dashboard_view, change_password_page, profile_view
+from frontend.views import login_view, register_view, dashboard_view, change_password_page, profile_view, logout_view
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path('auth/', include('authentication.urls')),
     path('employees/', include('employees.urls')),
     
-    path("login/", login_view),
+    path("login/", login_view, name='login_page'),
+    path('logout/', logout_view, name='logout'),
     path("register/", register_view),
     path("dashboard/", dashboard_view),
     path("change-password/", change_password_page),
