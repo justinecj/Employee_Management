@@ -8,6 +8,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import CustomTokenObtainPairSerializer
+from django.http import JsonResponse
 
 
 @api_view(['POST'])
@@ -20,6 +21,16 @@ def register_user(request):
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+    
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        data = response.data
+
+        # Set access and refresh cookies
+        res = JsonResponse(data)
+        res.set_cookie('access', data['access'], httponly=True, samesite='Lax')
+        res.set_cookie('refresh', data['refresh'], httponly=True, samesite='Lax')
+        return res
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])

@@ -27,7 +27,7 @@ urlpatterns = [
     path("login/", login_view, name='login_page'),
     path('logout/', logout_view, name='logout'),
     path("register/", register_view),
-    path("dashboard/", dashboard_view),
+    path("dashboard/", dashboard_view, name='dashboard'),
     path("change-password/", change_password_page),
     path("profile/", profile_view),
     path("", login_view),
